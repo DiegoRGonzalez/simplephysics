@@ -46,19 +46,56 @@ function setupGame(){
         physics: { acc: {x:0,y:0}, spd: {x:0,y:0}, constForces: [], quiver: [] }
     }
     ball.draw = function(x, y) {
-        fillCircle(this.pos.x,this.pos.y,this.radius,this.color);
-
         if( paused ){
             var qvr = this.physics.quiver;
             for ( var i = 0; i < qvr.length; i++){
-                fillCircle(qvr[i].ray.x, qvr[i].ray.y, 20, makeColor(0,0,0,.25));
-                fillText("" + Math.floor(qvr[i].strength.abs + 0.5),
-                qvr[i].ray.x + 50, qvr[i].ray.y + 20, makeColor(1,1,1,.25), "50pt Arial");
+                drawArrow(this.pos, qvr[i].ray, 100, qvr[i].angle, qvr[i].strength.abs);
 
             }
         }
+
+        fillCircle(this.pos.x,this.pos.y,this.radius,this.color);
     }
     items.push(ball);
+}
+
+function drawArrow(source, ray, width, angle, strength){
+    var slope = (source.y - ray.y) / (source.x - ray.x);
+    var intercept = source.y - (slope * source.x);
+
+//    var xShift = 0;
+
+//    if( angle > Math.PI/2 && angle < 3*Math.PI/2){
+//        xShift = 50;
+//    } else if(angle > Math.PI/2 && angle < 3*Math.PI/2){
+//        xShift = -50;
+//    }
+
+//    var nx = ray.x + xShift;
+
+//    var ny = 50 + ray.y;
+//    if (nx != ray.x){
+//        ny = slope*nx + intercept;
+//    }else if ( angle > Math.PI){
+//        ny -= 100;
+//    }
+
+//TEMPORARY
+var xShift = 0;
+var yShift = -50;
+
+if(angle > Math.PI){
+    yShift = 90;
+    xShift = 20;
+}
+
+var nx = ray.x + xShift;
+var ny = ray.y + yShift;
+
+
+    fillText(Math.floor(strength), nx, ny, makeColor(0,0,0,1), "50pt Arial")
+    strokeLine(source.x, source.y, ray.x, ray.y, makeColor(0,0,0,1), 10)
+    drawTransformedImage(arrow, ray.x, ray.y, angle, 0.1, 0.1);
 }
 
 function onTouchStart(posX, posY, id){
@@ -144,11 +181,17 @@ function findAngle(ray, source){
     zeroMark = { x: -1, y: 0}
     newAngle = { x: ray.x - source.pos.x, y: ray.y - source.pos.y}
 
-    numerator = (zeroMark.x * zeroMark.y) + (newAngle.x * newAngle.y);
-    denomenator = Math.pow(zeroMark.x, 2) + Math.pow(zeroMark.y, 2)
-    denomenator *= Math.pow(newAngle.x, 2) + Math.pow(newAngle.y, 2)
-    preAngle = numerator / (Math.pow(denomenator, 0.5))
-    return Math.cos(preAngle);
+    preAngle = (((zeroMark.x * newAngle.x) + (zeroMark.y * newAngle.y)) /
+                (Math.pow((Math.pow(zeroMark.x, 2) + Math.pow(zeroMark.y, 2)), 0.5) *
+                 Math.pow((Math.pow(newAngle.x, 2) + Math.pow(newAngle.y, 2)), 0.5)) )
+
+    var angle = Math.acos(preAngle);
+
+    if( newAngle.y > 0){
+        angle = (2 * Math.PI) - angle
+    }
+
+    return angle;
 }
 
 function isWithin(testPos, item){
